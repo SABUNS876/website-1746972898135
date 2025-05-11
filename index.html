@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>AI Chat Multilanguage</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+  html, body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #app {
+    background: #1e1e2f;
+    width: 100%;
+    max-width: 420px;
+    height: 600px;
+    border-radius: 12px;
+    box-shadow: 0 16px 30px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    background: #3c3470;
+    padding: 16px 20px;
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-align: center;
+    user-select: none;
+  }
+  #chat {
+    flex: 1;
+    padding: 16px 20px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #5865f2 transparent;
+    background: #27293d;
+  }
+  #chat::-webkit-scrollbar {
+    width: 8px;
+  }
+  #chat::-webkit-scrollbar-thumb {
+    background-color: #5865f2;
+    border-radius: 20px;
+  }
+  .message {
+    max-width: 80%;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: 20px;
+    color: #e3e3f7;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+  .message.user {
+    background: #4a3ec1;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 20px;
+  }
+  .message.ai {
+    background: #5856d6;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 20px;
+  }
+  #input-area {
+    display: flex;
+    padding: 12px 15px;
+    background: #2f3050;
+  }
+  #input-area textarea {
+    flex: 1;
+    resize: none;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: none;
+    font-size: 1rem;
+    font-family: 'Roboto', sans-serif;
+    background: #454776;
+    color: #e6e6ff;
+    outline: none;
+    height: 48px;
+    line-height: 1.4;
+  }
+  #input-area select {
+    margin-left: 10px;
+    border-radius: 12px;
+    border: none;
+    background: #454776;
+    color: #e6e6ff;
+    font-size: 0.9rem;
+    padding: 0 8px;
+    user-select: none;
+    min-width: 110px;
+  }
+  #input-area button {
+    margin-left: 10px;
+    background: #5865f2;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 0 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+  }
+  #input-area button:active {
+    background: #3d45c7;
+  }
+  @media (max-width: 400px) {
+    #app {
+      height: 550px;
+      width: 100vw;
+      border-radius: 0;
+    }
+    #input-area select {
+      min-width: 90px;
+      font-size: 0.8rem;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>AI Chat with 10,000+ Languages</header>
+  <div id="chat" role="log" aria-live="polite"></div>
+  <form id="input-area" aria-label="Chat input area">
+    <textarea id="message-input" rows="1" placeholder="Type your message..." aria-label="Message input" required autocomplete="off" spellcheck="false"></textarea>
+    <select id="language-select" aria-label="Select language for chatting" title="Select language">
+      <!-- Languages will be populated by JS -->
+    </select>
+    <button type="submit" aria-label="Send message">Send</button>
+  </form>
+</div>
+<script>
+  const chat = document.getElementById('chat');
+  const form = document.getElementById('input-area');
+  const input = document.getElementById('message-input');
+  const langSelect = document.getElementById('language-select');
+
+  // Generate fake 10,000-language list for demonstration (ISO codes + "Language #" as name)
+  // In practice, real language data should be used; here we simulate for performance and displaying purpose only.
+  function generateLanguages() {
+    const langs = [];
+    for(let i=1; i<=10000; i++) {
+      langs.push({code: 'lang'+i, name: 'Language ' + i});
+    }
+    return langs;
+  }
+
+  // Populate language selector
+  function populateLanguages() {
+    const languages = generateLanguages();
+    const fragment = document.createDocumentFragment();
+    // Add 'English' default on top
+    const defaultOption = document.createElement('option');
+    defaultOption.value = 'en';
+    defaultOption.textContent = 'English';
+    fragment.appendChild(defaultOption);
+    for (let i = 0; i < languages.length; i++) {
+      const opt = document.createElement('option');
+      opt.value = languages[i].code;
+      opt.textContent = languages[i].name;
+      fragment.appendChild(opt);
+    }
+    langSelect.appendChild(fragment);
+  }
+
+  populateLanguages();
+
+  // Scroll to bottom helper
+  function scrollToBottom() {
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  // Append message to chat
+  function addMessage(text, from) {
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('message', from);
+    msgDiv.textContent = text;
+    chat.appendChild(msgDiv);
+    scrollToBottom();
+  }
+
+  // Mock AI API call - Replace this with your actual AI API integration
+  async function callAI(message, lang) {
+    // Simulate network delay
+    await new Promise(r => setTimeout(r, 1400));
+    // Fake multilingual response to simulate different languages by code
+    return `(${lang}) Echo: ${message}`;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    const lang = langSelect.value || 'en';
+    if (!text) return;
+    addMessage(text, 'user');
+    input.value = '';
+    input.disabled = true;
+    langSelect.disabled = true;
+    try {
+      const aiResponse = await callAI(text, lang);
+      addMessage(aiResponse, 'ai');
+    } catch (err) {
+      addMessage('Error: Unable to get response.', 'ai');
+    }
+    input.disabled = false;
+    langSelect.disabled = false;
+    input.focus();
+  });
+
+  // Resize textarea based on content
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = input.scrollHeight + 'px';
+  });
+
+  // Initial focus
+  input.focus();
+</script>
+</body>
+</html>
+
+```
